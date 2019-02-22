@@ -19,6 +19,7 @@ pipeline{
 		agent { label 'dhfLinuxAgent'}
 			steps{
 				script{
+				sh 'printenv'
 				if(env.CHANGE_TITLE){
 				JIRA_ID=env.CHANGE_TITLE.split(':')[0];
 				def transitionInput =[transition: [id: '41']]
@@ -47,11 +48,19 @@ pipeline{
 			post{
                   success {
                     println("Unit Tests Completed")
-                    sendMail 'stadikon@marklogic.com','Check: ${BUILD_URL}/console',false,'Unit Tests for  $BRANCH_NAME Passed'
+                    script{
+                    def author=env.CHANGE_AUTHOR.toString().trim().toLowerCase()
+                    def email=getEmailFromGITUser author 
+                    sendMail email,'Check: ${BUILD_URL}/console',false,'Unit Tests for  $BRANCH_NAME Passed'
+                    }
                    }
                    failure {
                       println("Unit Tests Failed")
-                      sendMail 'stadikon@marklogic.com','Check: ${BUILD_URL}/console',false,'Unit Tests for $BRANCH_NAME Failed'
+                      script{
+                    	def author=env.CHANGE_AUTHOR.toString().trim().toLowerCase()
+                    	def email=getEmailFromGITUser author 
+                      sendMail email,'Check: ${BUILD_URL}/console',false,'Unit Tests for $BRANCH_NAME Failed'
+                      }
                   }
                   }
 		}
@@ -69,8 +78,11 @@ pipeline{
 				println("Automated PR")
 				sh 'exit 0'
 			}else{
-		
-		sendMail 'stadikon@marklogic.com','Check: ${BUILD_URL}/console',false,'Waiting for code review $BRANCH_NAME '
+			script{
+                    def author=env.CHANGE_AUTHOR.toString().trim().toLowerCase()
+                    def email=getEmailFromGITUser author 
+			sendMail email,'Check: ${BUILD_URL}/console',false,'Waiting for code review $BRANCH_NAME '
+			}
 			try{
 			 timeout(time:5, unit:'MINUTES') {
             input message:'Review Done?'
@@ -127,12 +139,18 @@ pipeline{
                   success {
                     println("Merge Successful")
                     script{
-					sendMail 'stadikon@marklogic.com','Check: ${BUILD_URL}/console',false,'  $BRANCH_NAME is Merged'
+                    def author=env.CHANGE_AUTHOR.toString().trim().toLowerCase()
+                    def email=getEmailFromGITUser author 
+					sendMail email,'Check: ${BUILD_URL}/console',false,'  $BRANCH_NAME is Merged'
 					}
                    }
                    failure {
                       println("Retried 5times")
-                      sendMail 'stadikon@marklogic.com','Check: ${BUILD_URL}/console',false,' $BRANCH_NAME Cannot be Merged'
+                      script{
+                    def author=env.CHANGE_AUTHOR.toString().trim().toLowerCase()
+                    def email=getEmailFromGITUser author 
+                      sendMail email,'Check: ${BUILD_URL}/console',false,' $BRANCH_NAME Cannot be Merged'
+                      }
                   }
                   }
 		}
