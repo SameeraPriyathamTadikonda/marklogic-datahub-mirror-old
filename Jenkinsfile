@@ -22,7 +22,6 @@ pipeline{
 		agent { label 'dhfLinuxAgent'}
 			steps{
 				script{
-				sh 'printenv'
 				if(env.CHANGE_TITLE){
 				JIRA_ID=env.CHANGE_TITLE.split(':')[0];
 				def transitionInput =[transition: [id: '41']]
@@ -30,7 +29,7 @@ pipeline{
 				}
 				}
 				println(BRANCH_NAME)
-				sh 'echo '+JAVA_HOME+'export '+JAVA_HOME+' export $WORKSPACE/data-hub'+GRADLE_USER_HOME+' export '+MAVEN_HOME+' export PATH=$WORKSPACE/data-hub'+GRADLE_USER_HOME+':$PATH:$MAVEN_HOME/bin; cd $WORKSPACE/data-hub;rm -rf $GRADLE_USER_HOME/caches;./gradlew clean;./gradlew build -x test -Pskipui=true;'
+				sh 'echo '+JAVA_HOME+'export '+JAVA_HOME+' export $WORKSPACE/data-hub'+GRADLE_USER_HOME+' export '+MAVEN_HOME+' export PATH=$WORKSPACE/data-hub'+GRADLE_USER_HOME+':$PATH:$MAVEN_HOME/bin; cd $WORKSPACE/data-hub;rm -rf $WORKSPACE/data-hub'+GRADLE_USER_HOME+'/caches;./gradlew clean;./gradlew build -x test -Pskipui=true;'
 				archiveArtifacts artifacts: 'data-hub/marklogic-data-hub/build/libs/* , data-hub/ml-data-hub-plugin/build/libs/* , data-hub/quick-start/build/libs/', onlyIfSuccessful: true			}
 		}
 		stage('Unit-Tests'){
@@ -130,6 +129,7 @@ pipeline{
     					}else{
     						println("Merge Failed")
     					}
+    					sh 'rm -rf mergeResult.txt'
     				}else if(response.equals("blocked")){
     					println("retry blocked");
     					sleep time: 1, unit: 'MINUTES'
@@ -139,6 +139,7 @@ pipeline{
     					sh "curl -o - -s -w \"\n%{http_code}\n\" -X PUT -d '{\"commit_title\": \"$JIRA_ID: merging PR\"}' -u $Credentials  "+githubAPIUrl+"/pulls/$CHANGE_ID/merge | tail -1 > mergeResult.txt"
     					def mergeResult = readFile('mergeResult.txt').trim()
     					println("Result is"+ mergeResult)
+    					sh 'rm -rf mergeResult.txt'
     				}else{
     					println("merging not possible")
     					currentBuild.result = "FAILURE"
@@ -231,6 +232,7 @@ pipeline{
     					}else{
     						println("Merge Failed")
     					}
+
     			}
              }
 
